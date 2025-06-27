@@ -1,8 +1,9 @@
 const express = require('express')
 const fileUpload = require('express-fileupload')
 const cookieParser = require('cookie-parser')
+const bodyParser = require('body-parser')
 const { Upload } = require("@aws-sdk/lib-storage")
-const { S3Client, ListObjectsV2Command } = require("@aws-sdk/client-s3")
+const { S3Client, ListObjectsV2Command, DeleteObjectCommand } = require("@aws-sdk/client-s3")
 const crypto = require('crypto')
 const imageThumbnail = require('image-thumbnail');
 
@@ -21,6 +22,7 @@ const s3client = new S3Client({
 })
 
 const app = express()
+app.use(bodyParser.json())
 
 app.use(fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }
@@ -46,7 +48,7 @@ app.get('/', async (req, res) => {
   res.sendFile(`${FRONTEND_DIR}/home.html`)
 })
 
-app.post('/upload', async (req, res) => {
+app.post('/image', async (req, res) => {
 
   if (!req.files || !req.files.image) {
     return res.sendStatus(400)
@@ -115,13 +117,49 @@ app.post('/upload', async (req, res) => {
 
 })
 
-app.get('/gallery', (req,res) => {
+app.delete('/image', async (req, res) => {
+  if(!req.body.image)
+  {
+    return res.sendStatus(400)
+  }
+  const image = req.body.image
+  if(!image.match(/^[0-9a-f]{32}\.(?:jpe?g|png|gif|heic|webp)$/))
+  {
+    return res.sendStatus(400)
+  }
+  if(!req.cookies || !req.cookies.sessionId)
+  {
+    return res.sendStatus(400)
+  }
+  const sessionId = req.cookies.sessionId
+  const imageDelete = new DeleteObjectCommand({
+    Bucket: process.env.DOSPACES_BUCKET,
+    Delete: {
+      Objects: [
+        { Key: `uploads/${sessionId}/${image}` },
+        { Key: `uploads/${sessionId}/thumb-${image}` }
+      ]
+    }
+  })
+
+  s3client.send( imageDelete )
+    .then((s3res) => {
+      res.json({
+        success: true
+      });
+    })
+    .catch(e => {
+      console.log(e);
+      res.status(500).json({ success: false, message: "Couldn't delete file" })
+    })
+})
+
+app.get('/gallery', (req, res) => {
   res.sendFile(`${FRONTEND_DIR}/gallery.html`)
 })
 
 app.get('/images', (req, res) => {
-  if(!req.header("Authorization") || req.header("Authorization") !== process.env.ADMIN_PASSWORD)
-  {
+  if (!req.header("Authorization") || req.header("Authorization") !== process.env.ADMIN_PASSWORD) {
     return res.sendStatus(404)
   }
   const fetch_date = req.query.all ? 0 : new Date(last_fetch)
@@ -134,7 +172,7 @@ app.get('/images', (req, res) => {
         && !v.Key.includes('thumb')
         && new Date(v.LastModified) > fetch_date
       )
-      res.setHeader('Cache-Control','no-cache')
+      res.setHeader('Cache-Control', 'no-cache')
       res.send(filtered)
     })
   if (fetch_date) {
