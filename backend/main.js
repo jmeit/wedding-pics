@@ -3,7 +3,7 @@ const fileUpload = require('express-fileupload')
 const cookieParser = require('cookie-parser')
 const bodyParser = require('body-parser')
 const { Upload } = require("@aws-sdk/lib-storage")
-const { S3Client, ListObjectsV2Command, DeleteObjectCommand } = require("@aws-sdk/client-s3")
+const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3")
 const crypto = require('crypto')
 const imageThumbnail = require('image-thumbnail');
 
@@ -118,21 +118,18 @@ app.post('/image', async (req, res) => {
 })
 
 app.delete('/image', async (req, res) => {
-  if(!req.body.image)
-  {
+  if (!req.body || !req.body.image) {
     return res.sendStatus(400)
   }
   const image = req.body.image
-  if(!image.match(/^[0-9a-f]{32}\.(?:jpe?g|png|gif|heic|webp)$/))
-  {
+  if (!image.match(/^[0-9a-f]{32}\.(?:jpe?g|png|gif|heic|webp)$/)) {
     return res.sendStatus(400)
   }
-  if(!req.cookies || !req.cookies.sessionId)
-  {
+  if (!req.cookies || !req.cookies.sessionId) {
     return res.sendStatus(400)
   }
   const sessionId = req.cookies.sessionId
-  const imageDelete = new DeleteObjectCommand({
+  const imageDelete = new DeleteObjectsCommand({
     Bucket: process.env.DOSPACES_BUCKET,
     Delete: {
       Objects: [
@@ -142,7 +139,7 @@ app.delete('/image', async (req, res) => {
     }
   })
 
-  s3client.send( imageDelete )
+  s3client.send(imageDelete)
     .then((s3res) => {
       res.json({
         success: true
@@ -159,10 +156,15 @@ app.get('/gallery', (req, res) => {
 })
 
 app.get('/images', (req, res) => {
-  if (!req.header("Authorization") || req.header("Authorization") !== process.env.ADMIN_PASSWORD) {
+  const is_admin = !!req.header("Authorization") && req.header("Authorization") === process.env.ADMIN_PASSWORD
+  const sessionId = req.cookies && req.cookies.sessionId ? req.cookies.sessionId : false
+
+  if (!is_admin && !sessionId) {
     return res.sendStatus(404)
   }
-  const fetch_date = req.query.all ? 0 : new Date(last_fetch)
+
+  //const fetch_date = (is_admin && req.query.all) || sessionId ? 0 : new Date(last_fetch)
+  const fetch_date = 0
   s3client.send(new ListObjectsV2Command({
     Bucket: process.env.DOSPACES_BUCKET
   }))
@@ -170,6 +172,7 @@ app.get('/images', (req, res) => {
       const filtered = list.Contents.filter(v =>
         v.Key.startsWith('uploads/')
         && !v.Key.includes('thumb')
+        && (is_admin || (sessionId && v.Key.includes(sessionId)))
         && new Date(v.LastModified) > fetch_date
       )
       res.setHeader('Cache-Control', 'no-cache')

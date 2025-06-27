@@ -1,5 +1,6 @@
 (function () {
 
+
     const modalImgEl = document.getElementById('modal-img')
     modalImgEl.addEventListener('click', toggleModalImg)
 
@@ -7,7 +8,7 @@
     if (!localImgs) {
         localStorage.setItem("images", "[]")
     }
-    pullThumbs()
+    pullThumbs('local')
 
     const imgInps = document.querySelectorAll("input[type=file]")
     imgInps.forEach(inpEl =>
@@ -47,13 +48,6 @@
 
         })
 
-    document.addEventListener('click', (evt) => {
-        const target = evt.target.closest('#thumbs li')
-        if (target) {
-            toggleModalImg(target.getAttribute('data-origuri'))
-        }
-    })
-
 })();
 
 function loadThumb(imgUris) {
@@ -66,11 +60,44 @@ function loadThumb(imgUris) {
     thumbEl.classList.add('thumb')
     thumbEl.style.backgroundImage = `url('${imgUris.thumbUri}')`
     thumbEl.setAttribute('data-origuri', imgUris.origUri)
+    thumbEl.addEventListener('click', toggleModalImg.bind( thumbEl, imgUris.origUri ))
     thumbsEl.appendChild(thumbEl)
 }
-function pullThumbs() {
+function pullThumbs(source) {
+    if (source == "local") { pullThumbsLocal() }
+    else if (source == "remote") { pullThumbsRemote() }
+}
+function pullThumbsLocal() {
     let localImgs = JSON.parse(localStorage.getItem("images"))
     localImgs.forEach(loadThumb)
+}
+function pullThumbsRemote() {
+    const BUCKET_URL = `https://aleandjaredwedding2025.tor1.cdn.digitaloceanspaces.com/`
+    fetch('/images')
+        .then(res => {
+            res
+                .json()
+                .then(imgsRes => {
+                    if (!imgsRes.length) { return alert("Couldn't fetch images from server.") }
+                    const imgUris = imgsRes.map(img => {
+                        const thumbParts = img.Key.split("/")
+                        thumbParts[thumbParts.length - 1] = `thumb-${thumbParts.at(-1)}`
+                        const thumbKey = thumbParts.join('/')
+                        return {
+                            origUri: `${BUCKET_URL}${img.Key}`,
+                            thumbUri: `${BUCKET_URL}${thumbKey}`
+                        }
+                    })
+                    localStorage.setItem("images", JSON.stringify(imgUris))
+                    clearThumbs()
+                    imgUris.forEach(loadThumb)
+                })
+        })
+        .catch(console.error)
+}
+function clearThumbs() {
+    document.getElementById("thumbs")
+        .innerHTML = ""
 }
 function toggleModalImg(origUri) {
     const modalImgEl = document.getElementById('modal-img')
@@ -93,17 +120,21 @@ function deleteImage(evt) {
         '/image',
         {
             method: 'DELETE',
-            body: JSON.stringify({image})
+            body: JSON.stringify({ image }),
+            headers: {
+                "Content-Type": "application/json",
+            }
         }
     )
         .then(res => {
             res
                 .json()
                 .then(r => {
-                    if(!r.success){ return alert("Couldn't delete. Try again.") }
-                    const localImgs = JSON.parse( localStorage.getItem("images") )
-                    const newLocalImgs = localImgs.filter( img => img.origUri !== origUri )
-                    localStorage.setItem( "images", JSON.parse( newLocalImgs ) )
+                    if (!r.success) { return alert("Couldn't delete. Try again.") }
+                    const localImgs = JSON.parse(localStorage.getItem("images"))
+                    const newLocalImgs = localImgs.filter(img => img.origUri !== origUri)
+                    localStorage.setItem("images", JSON.stringify(newLocalImgs))
+                    thumbEl.remove()
                 })
         })
         .catch(console.error)
