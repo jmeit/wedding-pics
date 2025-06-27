@@ -1,3 +1,90 @@
-input[type=file] {
-    display:none;
+.wrap {
+    width: 100vw;
+    margin:0 auto;
+}
+
+.blur {
+    filter: blur(10px);
+    transition: filter 0.2s;
+}
+
+.text-center {
+    text-align: center;
+}
+
+#thumbs {
+    list-style: none;
+    padding: 0;
+}
+.thumb {
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+.thumb,
+#but-thumb-wrap {
+    display: inline-block;
+    position: relative;
+    width: 25%;
+    padding: 0 0 25%;
+    background-color: rgb(198, 195, 195);
+}
+#but-thumb {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    font-size: 0;
+    background-color: rgb(198, 195, 195);
+}
+#but-thumb::after {
+    content: "➕";
+    font-size: 3rem;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    transform: translateY(-50%);
+}
+
+#camera-wrap {
+    background: #EEAECA;
+    background: radial-gradient(circle, rgb(231, 221, 225) 0%, rgb(161, 167, 174) 100%);
+    padding: 0.2em;
+}
+
+#but-camera {
+    display: block;
+    margin: 0 auto;
+    width: 10%;
+    padding: 0 0 10%;
+    border-radius: 50%;
+    background: #3F5EFB;
+    background: radial-gradient(circle,rgb(188, 194, 223) 0%, rgba(252, 70, 107, 1) 100%);
+    font-size: 0;
+    position: relative;
+    box-shadow: 0 0 10px 5px #a8a1a1;;
+}
+#but-camera::after {
+    content: "📷";
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    text-align: center;
+    font-size: 2rem;
+}
+
+#modal-img {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: rgba(0, 0, 0, 0.5);
 }

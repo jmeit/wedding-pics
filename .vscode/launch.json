@@ -13,7 +13,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/backend/main.js",
-            "env": {"DEVELOPMENT":"1"}
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

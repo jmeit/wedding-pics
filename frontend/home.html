@@ -1,28 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+    <div id="page">
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Alessandra + Jared Pics 2025</title>
-        <link rel="stylehseet" href="css/home.css">
+        <link rel="stylesheet" href="/css/reset.css">
+        <link rel="stylesheet" href="/css/home.css">
     </head>
     <body>
-        <header>
-            <div>Alessandra + Jared 2025</div>
-        </header>
-        <main>
-            <div id="thumbs-wrap">
-                <ul id="thumbs">
-                    <li>
-                        <label for="camera">+</label>
-                        <input type="image" id="from-lib" name="from-lib" accept="image/*,video/*" />
-                    </li>
-                </ul>
-            </div>
-        </main>
-        <footer>
-            <div>
-                <label for="camera">&#128247;</label>
-                <input type="file" id="selfie" name="selfie" accept="image/*,video/*" capture="user" />
-            </div>
-        </footer>
+        <div class="wrap">
+            <header>
+                <div class="text-center">Alessandra + Jared 2025</div>
+            </header>
+        </div>
+        <div class="wrap">
+            <main>
+                <div id="thumbs-wrap">
+                    <ul id="thumbs"></ul>
+                    <div id="but-thumb-wrap">
+                        <label id="but-thumb" for="photos">+</label>
+                        <input type="file" class="visually-hidden" id="photos" name="photos" accept="image/*,video/*" />
+                    </div>
+                </div>
+            </main>
+        </div>
+        <div class="wrap">
+            <footer id="camera-wrap">
+                <div>
+                    <label id="but-camera" for="camera">&#128247;</label>
+                    <input type="file" class="visually-hidden" id="camera" name="camera" accept="image/*,video/*" capture="user" />
+                </div>
+            </footer>
+        </div>
+    </div>
+        <div class="hidden" id="modal-img"></div>
+        <script src="/js/main.js"></script>
     </body>
 </html>
