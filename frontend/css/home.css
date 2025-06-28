@@ -1,6 +1,6 @@
 .wrap {
-    width: 100vw;
-    margin:0 auto;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .blur {
@@ -12,23 +12,91 @@
     text-align: center;
 }
 
+#page {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+}
+
+header {
+    color: aquamarine;
+    background: #A4798C;
+    border: 1em solid #371818;
+    box-sizing: border-box;
+    text-shadow: 0px 0px 10px #881646;
+}
+
+main {
+    overflow: scroll;
+    flex: 1;
+    min-height: min-content;
+    background: radial-gradient(circle, rgb(28, 28, 28) 0%, rgb(0, 0, 0) 100%);
+}
+
+main.uploading {
+    background: #020024;
+    background: linear-gradient(0deg,rgba(2, 0, 36, 1) 0%, rgba(2, 0, 36, 1) 10%, rgba(9, 9, 121, 1) 40%, rgba(0, 212, 255, 1) 50%, rgba(9, 9, 121, 1) 60%, rgba(2, 0, 36, 1) 90%, rgba(2, 0, 36, 1) 100%);
+    background-size: 100% 800%;
+    animation: gradient-vertical 2s infinite;
+}
+
+@keyframes gradient-vertical {
+    0% {
+        background-position: 50% 0%;
+    }
+
+    100% {
+        background-position: 50% 100%;
+    }
+}
+
 #thumbs {
     list-style: none;
     padding: 0;
 }
+
 .thumb {
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
-.thumb,
-#but-thumb-wrap {
     display: inline-block;
     position: relative;
     width: 25%;
     padding: 0 0 25%;
     background-color: rgb(198, 195, 195);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
+
+.thumb.deleting,
+.thumb.deleting button {
+    pointer-events: none;
+}
+
+.thumb.deleting::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    background: linear-gradient(45deg, rgba(0, 0, 0, 0.5) 40%, rgba(255, 0, 111, 0.5) 40%, rgba(255, 0, 111, 1) 50%, rgba(0, 0, 0, 0.5) 50%);
+    background-size: 400% 100%;
+    animation: gradient-horizontal 2s infinite;
+}
+
+@keyframes gradient-horizontal {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+
 #but-thumb {
     display: block;
     position: absolute;
@@ -37,6 +105,7 @@
     font-size: 0;
     background-color: rgb(198, 195, 195);
 }
+
 #but-thumb::after {
     content: "➕";
     font-size: 3rem;
@@ -48,33 +117,43 @@
     transform: translateY(-50%);
 }
 
-#camera-wrap {
+#action-wrap {
     background: #EEAECA;
     background: radial-gradient(circle, rgb(231, 221, 225) 0%, rgb(161, 167, 174) 100%);
     padding: 0.2em;
+    text-align: center;
 }
 
-#but-camera {
-    display: block;
-    margin: 0 auto;
+#but-thumb-wrap,
+#camera-wrap {
+    display: inline-block;
+    vertical-align: middle;
     width: 10%;
     padding: 0 0 10%;
     border-radius: 50%;
     background: #3F5EFB;
-    background: radial-gradient(circle,rgb(188, 194, 223) 0%, rgba(252, 70, 107, 1) 100%);
+    background: radial-gradient(circle, rgb(188, 194, 223) 0%, rgba(252, 70, 107, 1) 100%);
     font-size: 0;
     position: relative;
-    box-shadow: 0 0 10px 5px #a8a1a1;;
+    box-shadow: 0 0 10px 5px #a8a1a1;
+    overflow: hidden;
+    margin: 1rem;
 }
+
+#camera-wrap {
+    width: 15%;
+    padding: 0 0 15%;
+}
+
 #but-camera::after {
     content: "📷";
     position: absolute;
     width: 100%;
     top: 50%;
     left: 0;
-    transform: translateY(-50%);
+    transform: translateY(-62%);
     text-align: center;
-    font-size: 2rem;
+    font-size: 3rem;
 }
 
 #modal-img {

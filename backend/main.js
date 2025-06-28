@@ -51,7 +51,7 @@ app.get('/', async (req, res) => {
 app.post('/image', async (req, res) => {
 
   if (!req.files || !req.files.image) {
-    return res.sendStatus(400)
+    return res.status(400).send({success:false,msg:"No file"})
   }
 
   const image = req.files.image
@@ -104,9 +104,8 @@ app.post('/image', async (req, res) => {
   Promise.all([imageUpload, thumbUpload])
     .then((s3res) => {
       res.json({
-        success: true,
-        origUri: s3res[0].Location,
-        thumbUri: s3res[1].Location
+        origUri: s3res[0].Key,
+        thumbUri: s3res[1].Key
       });
     })
     .catch(e => {
