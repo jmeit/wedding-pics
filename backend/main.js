@@ -5,7 +5,7 @@ const bodyParser = require('body-parser')
 const { Upload } = require("@aws-sdk/lib-storage")
 const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3")
 const crypto = require('crypto')
-const imageThumbnail = require('image-thumbnail');
+const sharp = require('sharp');
 
 const FRONTEND_DIR = `${process.cwd()}/frontend`
 const port = process.env.DEVELOPMENT ? 3000 : 443
@@ -70,38 +70,75 @@ app.post('/image', async (req, res) => {
     sessionId = req.cookies.sessionId
   }
 
-  let thumbnail = Buffer.from("")
-  try {
-    thumbnail = await imageThumbnail(image.data, { percentage: 25, fit: "cover" })
+  // Compress image
+  const compressedExt = 'webp'
+  let imgCompresed = new Uint8Array()
+  try{
+  imgCompresed = await sharp(image.data)
+    .resize({
+      width: 1920,
+      fit: sharp.fit.inside,
+      withoutEnlargement: true
+    })
+    .webp({ quality: 80 })
+    .toBuffer()
+  } catch(err) {
+    console.error(err)
+    return res.statusCode(500).send("Could not complete upload")
   }
-  catch (e) {
-    console.log("Error creating thumbnail")
-    console.log(e)
+
+  // Create thumbnail
+  let thumbnail = new Uint8Array()
+  try{
+  thumbnail = await sharp(image.data)
+    .resize({
+      width: 400,
+      height: 400,
+      fit: sharp.fit.cover
+    })
+    .webp({ quality: 50 })
+    .toBuffer()
+  } catch(err) {
+    console.error(err)
     return res.statusCode(500).send("Could not create thumbnail")
   }
 
-  const imageUpload = new Upload({
+  // Upload original quality
+  // No need to wait for completion to respond to user
+  new Upload({
     client: s3client,
     params: {
-      Key: `uploads/${sessionId}/${image.md5}.${image.ext}`,
+      Key: `uploads/${sessionId}/full-${image.md5}.${image.ext}`,
       Body: image.data,
       Bucket: process.env.DOSPACES_BUCKET,
       ContentType: image.mimetype,
       ACL: 'public-read'
     }
   }).done()
+  //Upload compressed version
+  const compressedUpload = new Upload({
+    client: s3client,
+    params: {
+      Key: `uploads/${sessionId}/${image.md5}.${compressedExt}`,
+      Body: imgCompresed,
+      Bucket: process.env.DOSPACES_BUCKET,
+      ContentType: `image/${compressedExt}`,
+      ACL: 'public-read'
+    }
+  }).done()
+  // Upload thumbnail
   const thumbUpload = new Upload({
     client: s3client,
     params: {
-      Key: `uploads/${sessionId}/thumb-${image.md5}.${image.ext}`,
+      Key: `uploads/${sessionId}/thumb-${image.md5}.${compressedExt}`,
       Body: thumbnail,
       Bucket: process.env.DOSPACES_BUCKET,
-      ContentType: image.mimetype,
+      ContentType: `image/${compressedExt}`,
       ACL: 'public-read',
     }
   }).done()
 
-  Promise.all([imageUpload, thumbUpload])
+  Promise.all([compressedUpload, thumbUpload])
     .then((s3res) => {
       res.json({
         origUri: s3res[0].Key,
@@ -133,7 +170,8 @@ app.delete('/image', async (req, res) => {
     Delete: {
       Objects: [
         { Key: `uploads/${sessionId}/${image}` },
-        { Key: `uploads/${sessionId}/thumb-${image}` }
+        { Key: `uploads/${sessionId}/thumb-${image}` },
+        { Key: `uploads/${sessionId}/full-${image}` },
       ]
     }
   })
