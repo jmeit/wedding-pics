@@ -18,7 +18,7 @@
                 res
                     .json()
                     .then(imgs => {
-                        imgs.forEach(img => images.push( img.Key ) )
+                        imgs.forEach(img => images.push(img.Key))
                     })
             })
             .catch(console.error)
@@ -28,17 +28,38 @@
 
 
     let index = 0;
-    const img = document.getElementById('slideshow');
+    const imgWrap = document.getElementById('slideshow');
+    imgWrap.querySelectorAll('img').forEach(imgEl => {
+        imgEl.onload = showNextImage
+    })
 
-    function showNextImage() {
-        if(!images.length){
+    function loadNextImage() {
+        if (!images.length) {
             return false
         }
-        img.src = `${BUCKET_URL}${images[index]}`;
+        const waitingImg = imgWrap.querySelector('.waiting')
+        waitingImg.src = `${BUCKET_URL}${images[index]}`;
         index = (index + 1) % images.length;
+        if (img.complete) {
+            showNextImage()
+        }
     }
 
-    setInterval(showNextImage, 3000);
-    showNextImage();
+    function showNextImage() {
+        if (!images.length) {
+            return false
+        }
+        imgWrap.querySelectorAll('img').forEach(imgEl => {
+            imgEl.classList.toggle('visible')
+            imgEl.classList.toggle('waiting')
+        })
+    }
+
+    function stepSlideshow() {
+        loadNextImage();
+    }
+
+    setInterval(stepSlideshow, 3000);
+    stepSlideshow()
 
 })();
