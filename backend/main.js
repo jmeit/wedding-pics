@@ -75,6 +75,7 @@ app.post('/image', async (req, res) => {
   let imgCompresed = new Uint8Array()
   try{
   imgCompresed = await sharp(image.data)
+    .autoOrient()
     .resize({
       width: 1920,
       fit: sharp.fit.inside,
@@ -91,6 +92,7 @@ app.post('/image', async (req, res) => {
   let thumbnail = new Uint8Array()
   try{
   thumbnail = await sharp(image.data)
+    .autoOrient()
     .resize({
       width: 400,
       height: 400,
