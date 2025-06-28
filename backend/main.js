@@ -5,6 +5,7 @@ const bodyParser = require('body-parser')
 const { Upload } = require("@aws-sdk/lib-storage")
 const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3")
 const crypto = require('crypto')
+const fs = require('fs')
 const sharp = require('sharp');
 
 const FRONTEND_DIR = `${process.cwd()}/frontend`
@@ -32,13 +33,35 @@ app.use(cookieParser())
 app.get('/css/:cssfile.css', (req, res) => {
   const cssfile = req.params.cssfile
   if (cssfile.match(/[^a-z]/)) { res.sendStatus(404) }
-  res.sendFile(`${FRONTEND_DIR}/css/${cssfile}.css`)
+  res.sendFile(`${FRONTEND_DIR}/css/${cssfile}.css`, {}, (err) => {
+    if (err) {
+      res.sendStatus(404)
+    }
+  })
 })
 
 app.get('/js/:jsfile.js', (req, res) => {
   const jsfile = req.params.jsfile
   if (jsfile.match(/[^a-z]/)) { res.sendStatus(404) }
-  res.sendFile(`${FRONTEND_DIR}/js/${jsfile}.js`)
+  res.sendFile(`${FRONTEND_DIR}/js/${jsfile}.js`, {}, (err) => {
+    if (err) {
+      res.sendStatus(404)
+    }
+  })
+})
+
+app.get('/img/:imgfile.svg', (req, res) => {
+  const imgfile = req.params.imgfile
+  if (imgfile.match(/[^a-z-]/)) { res.sendStatus(404) }
+  res.sendFile(`${FRONTEND_DIR}/img/${imgfile}.svg`, {}, (err) => {
+    if (err) {
+      res.sendStatus(404)
+    }
+  })
+})
+
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(`${FRONTEND_DIR}/img/favicon/favicon.ico`)
 })
 
 app.get('/', async (req, res) => {

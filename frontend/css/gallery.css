@@ -1,0 +1,56 @@
+body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+    }
+
+    #slideshow img {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      position: absolute;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+
+    #slideshow img.visible {
+      opacity: 1;
+    }
+
+    #ad {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 10vw;
+      z-index: 2;
+      animation: fade-in-out 100s infinite;
+    }
+    #ad img {
+      width: 100%;
+    }
+
+    @keyframes fade-in-out {
+      0% {
+        opacity: 1;
+      }
+
+      47% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+
+      97% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
