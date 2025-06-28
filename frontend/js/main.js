@@ -40,13 +40,13 @@
                 })
                 .then(res => {
                     res.json().then(imgUris => {
+                        mainEl.classList.remove('uploading')
                         const localImgs = JSON.parse(localStorage.getItem("images"))
                         if (localImgs.includesObj(imgUris)) {
                             alert("That's a duplicate")
                             return false
                         }
                         loadThumb(imgUris)
-                        mainEl.classList.remove('uploading')
                         localStorage.setItem("images", JSON.stringify(localImgs.concat(imgUris)))
                     })
                 })
