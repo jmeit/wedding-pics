@@ -241,7 +241,7 @@ async function setCookies(res) {
       httpOnly: true,
       secure: true,
       sameSite: 'Strict',
-      expires: new Date(Date.now() + 86400000) // 24hrs
+      expires: new Date(Date.now() + (86400000 * 2)) // 48hrs
     })
 
   return sessionId
