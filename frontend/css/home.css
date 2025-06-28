@@ -129,11 +129,9 @@ main.uploading {
 #camera-wrap {
     display: inline-block;
     vertical-align: middle;
-    width: 10%;
-    padding: 0 0 10%;
+    width: 5rem;
+    padding: 0 0 5rem;
     border-radius: 50%;
-    background: #3F5EFB;
-    background: radial-gradient(circle, rgb(188, 194, 223) 0%, rgba(252, 70, 107, 1) 100%);
     font-size: 0;
     position: relative;
     box-shadow: 0 0 10px 5px #a8a1a1;
@@ -142,8 +140,8 @@ main.uploading {
 }
 
 #camera-wrap {
-    width: 15%;
-    padding: 0 0 15%;
+    background: rgb(252, 70, 107);
+    background: radial-gradient(circle, rgb(188, 194, 223) 0%, rgba(252, 70, 107, 1) 100%);
 }
 
 #but-camera::after {

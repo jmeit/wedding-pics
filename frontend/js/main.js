@@ -1,4 +1,7 @@
+
 (function () {
+    window.BUCKET_URL = `https://aleandjaredwedding2025.tor1.cdn.digitaloceanspaces.com/`
+
     Array.prototype.unique = function () {
         return Array.from(new Set(this.map(obj => JSON.stringify(obj)))).map(e => JSON.parse(e));
     }
@@ -57,7 +60,6 @@
 })();
 
 function loadThumb(imgUris) {
-    const BUCKET_URL = `https://aleandjaredwedding2025.tor1.cdn.digitaloceanspaces.com/`
     const thumbsEl = document.getElementById("thumbs")
     const thumbEl = document.createElement("li")
     const thumbXEl = document.createElement("button")
@@ -65,9 +67,9 @@ function loadThumb(imgUris) {
     thumbXEl.addEventListener('click', deleteImage)
     thumbEl.appendChild(thumbXEl)
     thumbEl.classList.add('thumb')
-    thumbEl.style.backgroundImage = `url('${BUCKET_URL}${imgUris.thumbUri}')`
+    thumbEl.style.backgroundImage = `url('${window.BUCKET_URL}${imgUris.thumbUri}')`
     thumbEl.setAttribute('data-origuri', imgUris.origUri)
-    thumbEl.addEventListener('click', toggleModalImg.bind(thumbEl, `${BUCKET_URL}${imgUris.origUri}`))
+    thumbEl.addEventListener( 'click', toggleModalImg )
     thumbsEl.appendChild(thumbEl)
 }
 function pullThumbs(source) {
@@ -111,18 +113,29 @@ function clearThumbs() {
     document.getElementById("thumbs")
         .innerHTML = ""
 }
-function toggleModalImg(origUri) {
+function toggleModalImg(evt) {
     const modalImgEl = document.getElementById('modal-img')
     const pageEl = document.getElementById('page')
-    if (typeof origUri == "object") {
+
+    // Close Modal
+    if ( !evt || !this.classList.contains('thumb') ) {
         modalImgEl.classList.add('hidden')
         pageEl.classList.remove('blur')
+        modalImgEl.removeAttribute('data-origuri')
         return
     }
-    modalImgEl.style.backgroundImage = `url('${origUri}')`
+
+    // Open Modal
+    const imgUri = this. getAttribute('data-origuri')
+    const butDelete = modalImgEl.querySelector('#but-delete')
+    butDelete.removeEventListener('click',deleteImage)
+    butDelete.addEventListener('click',deleteImage)
+    modalImgEl.setAttribute('data-origuri',imgUri)
+    modalImgEl.style.backgroundImage = `url('${window.BUCKET_URL}${imgUri}')`
     modalImgEl.classList.remove('hidden')
     pageEl.classList.add('blur')
 }
+
 function deleteImage(evt) {
     evt.preventDefault()
     evt.stopPropagation()
@@ -132,10 +145,14 @@ function deleteImage(evt) {
         return false
     }
 
-    const thumbEl = evt.target.parentNode
+    const parentEl = evt.target.parentNode
+    const origUri = parentEl.getAttribute('data-origuri')
+    const thumbEl = parentEl.classList.contains('thumb') ? parentEl : document.querySelector(`.thumb[data-origuri="${origUri}"]`)
     thumbEl.classList.add('deleting')
-    const origUri = thumbEl.getAttribute('data-origuri')
     const image = origUri.split("/").pop()
+    
+    toggleModalImg(false)
+
     fetch(
         '/image',
         {
