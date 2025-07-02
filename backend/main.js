@@ -9,7 +9,6 @@ import sharp from 'sharp'
 
 const FRONTEND_DIR = `${process.cwd()}/frontend`
 const port = process.env.DEVELOPMENT ? 3000 : 443
-let last_fetch = 0
 
 const s3client = new S3Client({
   region: 'tor1', // can be anything if not required by provider
@@ -29,6 +28,7 @@ app.use(expressFileUpload({
 }));
 app.use(expressCookieParser())
 
+// Serve files
 app.get('/css/:cssfile.css', (req, res) => {
   const cssfile = req.params.cssfile
   if (cssfile.match(/[^a-z]/)) { res.sendStatus(404) }
@@ -70,6 +70,7 @@ app.get('/', async (req, res) => {
   res.sendFile(`${FRONTEND_DIR}/home.html`)
 })
 
+// API
 app.post('/image', async (req, res) => {
 
   if (!req.files || !req.files.image) {
@@ -224,24 +225,23 @@ app.get('/images', (req, res) => {
     return res.sendStatus(404)
   }
 
-  //const fetch_date = (is_admin && req.query.all) || sessionId ? 0 : new Date(last_fetch)
-  const fetch_date = 0
+  let last_fetch = req.query.last_fetch && req.query.last_fetch.match(/^\d{13}$/) ? Number(req.query.last_fetch) : 0
+
+  const fetch_date = (is_admin && req.query.all) || sessionId ? 0 : new Date(last_fetch)
   s3client.send(new ListObjectsV2Command({
-    Bucket: process.env.DOSPACES_BUCKET
+    Bucket: process.env.DOSPACES_BUCKET,
+    Prefix: `uploads/`
   }))
     .then(list => {
       const filtered = list.Contents.filter(v =>
         v.Key.startsWith('uploads/')
-        && !v.Key.includes('thumb')
+        && !/\/(thumb|full)-/.test(v.Key)
         && (is_admin || (sessionId && v.Key.includes(sessionId)))
         && new Date(v.LastModified) > fetch_date
       )
       res.setHeader('Cache-Control', 'no-cache')
       res.send(filtered)
     })
-  if (fetch_date) {
-    last_fetch = Date.now()
-  }
 })
 
 app.use(function (req, res, next) {
