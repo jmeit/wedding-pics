@@ -1,16 +1,30 @@
 
 (function () {
 
-    const BUCKET_URL = `https://aleandjaredwedding2025.tor1.cdn.digitaloceanspaces.com/`
+    let BUCKET_URL = ''
     const password = prompt("Password:")
-    const event_id = (new URL(location.href)).searchParams.get('event_id')
-    const imageKeys = []
+    const eventId = (new URL(location.href)).searchParams.get('eventId')
+    let imageKeys = []
     let last_fetch = 0
+
+    function fetchConfig() {
+        fetch(
+            `/config?eventId=${eventId}`
+        )
+            .then(res => {
+                res
+                    .json()
+                    .then(config => {
+                        BUCKET_URL = config.bucket_url
+                    })
+            })
+            .catch(console.error)
+    }
 
     function pollImages() {
         const current_time = Date.now()
         fetch(
-            `/images?event_id=${event_id}&last_fetch=${last_fetch}&t=${current_time}`,
+            `/images?eventId=${eventId}&last_fetch=${last_fetch}`,
             {
                 headers: {
                     Authorization: password
@@ -28,9 +42,10 @@
             })
             .catch(console.error)
     }
+
+    fetchConfig()
     setInterval(pollImages, 30000)
     pollImages()
-
 
     let index = 0;
     const imgWrap = document.getElementById('slideshow');

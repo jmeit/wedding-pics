@@ -12,11 +12,11 @@ const port = process.env.DEVELOPMENT ? 3000 : 443
 
 const s3client = new S3Client({
   region: 'tor1', // can be anything if not required by provider
-  endpoint: process.env.DOSPACES_ENDPOINT, // <-- your custom endpoint
+  endpoint: process.env.S3_ENDPOINT, // <-- your custom endpoint
   forcePathStyle: true, // often required for compatibility (e.g. MinIO, Ceph)
   credentials: {
-    accessKeyId: process.env.DOSPACES_SECRET_ID,
-    secretAccessKey: process.env.DOSPACES_SECRET
+    accessKeyId: process.env.S3_SECRET_ID,
+    secretAccessKey: process.env.S3_SECRET
   }
 })
 
@@ -85,13 +85,14 @@ app.post('/image', async (req, res) => {
   }
   image.ext = ext[1]
 
-  let sessionId = "anon"
   if (!req.cookies || !req.cookies.sessionId) {
-    sessionId = await setCookies(res)
+    return res.sendStatus(400)
   }
-  else {
-    sessionId = req.cookies.sessionId
+  if ( !validateSessionID(req.cookies.sessionId) ) {
+    return res.sendStatus(401)
   }
+  
+  const sessionId = req.cookies.sessionId
 
   // Compress image
   const compressedExt = 'webp'
@@ -135,7 +136,7 @@ app.post('/image', async (req, res) => {
     params: {
       Key: `uploads/${sessionId}/full-${image.md5}.${image.ext}`,
       Body: image.data,
-      Bucket: process.env.DOSPACES_BUCKET,
+      Bucket: process.env.S3_BUCKET,
       ContentType: image.mimetype,
       ACL: 'public-read'
     }
@@ -146,7 +147,7 @@ app.post('/image', async (req, res) => {
     params: {
       Key: `uploads/${sessionId}/${image.md5}.${compressedExt}`,
       Body: imgCompresed,
-      Bucket: process.env.DOSPACES_BUCKET,
+      Bucket: process.env.S3_BUCKET,
       ContentType: `image/${compressedExt}`,
       ACL: 'public-read'
     }
@@ -157,7 +158,7 @@ app.post('/image', async (req, res) => {
     params: {
       Key: `uploads/${sessionId}/thumb-${image.md5}.${compressedExt}`,
       Body: thumbnail,
-      Bucket: process.env.DOSPACES_BUCKET,
+      Bucket: process.env.S3_BUCKET,
       ContentType: `image/${compressedExt}`,
       ACL: 'public-read',
     }
@@ -189,9 +190,12 @@ app.delete('/image', async (req, res) => {
   if (!req.cookies || !req.cookies.sessionId) {
     return res.sendStatus(400)
   }
+  if ( !validateSessionID(req.cookies.sessionId) ) {
+    return res.sendStatus(401)
+  }
   const sessionId = req.cookies.sessionId
   const imageDelete = new DeleteObjectsCommand({
-    Bucket: process.env.DOSPACES_BUCKET,
+    Bucket: process.env.S3_BUCKET,
     Delete: {
       Objects: [
         { Key: `uploads/${sessionId}/${image}` },
@@ -218,30 +222,41 @@ app.get('/gallery', (req, res) => {
 })
 
 app.get('/images', (req, res) => {
-  const is_admin = !!req.header("Authorization") && req.header("Authorization") === process.env.ADMIN_PASSWORD
+  const is_gallery = !!req.header("Authorization") && req.header("Authorization") === process.env.ADMIN_PASSWORD
   const sessionId = req.cookies && req.cookies.sessionId ? req.cookies.sessionId : false
 
-  if (!is_admin && !sessionId) {
-    return res.sendStatus(404)
+  if (
+    ( !is_gallery && !sessionId )
+    || ( sessionId && !validateSessionID(req.cookies.sessionId) )
+  ) {
+    return res.sendStatus(401)
   }
 
-  let last_fetch = req.query.last_fetch && req.query.last_fetch.match(/^\d{13}$/) ? Number(req.query.last_fetch) : 0
+  let last_fetch = 0
+  if( req.query && req.query.last_fetch && /^\d{13}$/.test(req.query.last_fetch) ) {
+    last_fetch = parseInt(req.query.last_fetch, 10)
+  }
 
-  const fetch_date = (is_admin && req.query.all) || sessionId ? 0 : new Date(last_fetch)
+  const fetch_date = sessionId ? 0 : new Date(last_fetch)
   s3client.send(new ListObjectsV2Command({
-    Bucket: process.env.DOSPACES_BUCKET,
+    Bucket: process.env.S3_BUCKET,
+    //Prefix: `uploads/${eventId}/webp/${sessionId}/`
     Prefix: `uploads/`
   }))
     .then(list => {
       const filtered = list.Contents.filter(v =>
         v.Key.startsWith('uploads/')
         && !/\/(thumb|full)-/.test(v.Key)
-        && (is_admin || (sessionId && v.Key.includes(sessionId)))
+        && (is_gallery || (sessionId && v.Key.includes(sessionId)))
         && new Date(v.LastModified) > fetch_date
       )
       res.setHeader('Cache-Control', 'no-cache')
       res.send(filtered)
     })
+})
+
+app.get('/config', (req, res) => {
+  res.send({bucket_url: process.env.S3_BUCKET_URL})
 })
 
 app.use(function (req, res, next) {
@@ -253,7 +268,7 @@ app.listen(port, () => {
 })
 
 async function setCookies(res) {
-  const buffer = await crypto.randomBytes(48)
+  const buffer = await crypto.randomBytes( parseInt( process.env.SESSION_KEY_LENGTH, 10 ) )
   const sessionId = buffer.toString('hex')
 
   res.cookie(
@@ -263,8 +278,14 @@ async function setCookies(res) {
       httpOnly: true,
       secure: true,
       sameSite: 'Strict',
-      expires: new Date(Date.now() + (86400000 * 2)) // 48hrs
+      expires: new Date( Date.now() + ( 86400000 * parseInt(process.env.SESSION_EXPIRY_DAYS, 10) ) )
     })
 
   return sessionId
+}
+
+function validateSessionID( sessionId ) {
+  const sessionIdLength = parseInt( process.env.SESSION_KEY_LENGTH, 10 ) * 2
+  const sessionRegex = new RegExp(`^[a-f0-9]{${sessionIdLength}}$`)
+  return sessionRegex.test(sessionId)
 }
