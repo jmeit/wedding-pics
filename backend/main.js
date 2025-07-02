@@ -1,12 +1,11 @@
-const express = require('express')
-const fileUpload = require('express-fileupload')
-const cookieParser = require('cookie-parser')
-const bodyParser = require('body-parser')
-const { Upload } = require("@aws-sdk/lib-storage")
-const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3")
-const crypto = require('crypto')
-const fs = require('fs')
-const sharp = require('sharp');
+import crypto from 'crypto'
+import express from 'express'
+import expressFileUpload from 'express-fileupload'
+import expressCookieParser from 'cookie-parser'
+import expressBodyParser from 'body-parser'
+import { Upload } from "@aws-sdk/lib-storage"
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3"
+import sharp from 'sharp'
 
 const FRONTEND_DIR = `${process.cwd()}/frontend`
 const port = process.env.DEVELOPMENT ? 3000 : 443
@@ -23,12 +22,12 @@ const s3client = new S3Client({
 })
 
 const app = express()
-app.use(bodyParser.json())
+app.use(expressBodyParser.json())
 
-app.use(fileUpload({
+app.use(expressFileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }
 }));
-app.use(cookieParser())
+app.use(expressCookieParser())
 
 app.get('/css/:cssfile.css', (req, res) => {
   const cssfile = req.params.cssfile
